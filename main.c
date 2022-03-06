@@ -4,7 +4,7 @@
 
 // define number of DIGIT_LIMIT_LIMIT
 // 257 digits at most according to the description, set it to 1024 for safety
-#define DIGIT_LIMIT 1024
+#define DIGIT_LIMIT 513
 
 // define a Data structure with struct which can store Big integer using array, 
 // it's digits (the size of array) represents the number of digits of the integer
@@ -16,7 +16,7 @@ typedef struct BigInt{
     int digit_limit;
     // save integer digit number in each of the slot 
     // note that the number is saved in reverse order
-    // Ex: Number 7053211 in the array is like {1, 1, 2, 3, 5, 0, 7}
+    // Ex: Value 7053211 in the array is saved as {1, 1, 2, 3, 5, 0, 7}
     int *ptr;
 } BigInt;
 
@@ -56,13 +56,17 @@ int BigInt_Comparator(BigInt *a, BigInt *b);
 
 // this function will divide BigInt by 2
 void BigInt_DivideByTwo(BigInt *);
+void BigInt_DivideByTwoVer2(BigInt *);
+
 // this function will multiple BigInt by 2
 void BigInt_MultipleByTwo(BigInt *);
+void BigInt_MultipleByTwoVer2(BigInt *);
 
 // subtraction between two BigInts
 // input: Pointer of two BigInt entry a, b where value of a is greater than b
 // output: A BigInt pointer that saved the result of digit of a array - digit of b array
-BigInt* BigInt_Subtraction(BigInt *a, BigInt *b);
+BigInt* BigInt_SubtractionBuggy(BigInt *a, BigInt *b); 
+void BigInt_SubtractionVer2(BigInt *a, BigInt *b); 
 
 // function that reverse a string 
 char* string_reverse(char *);
@@ -112,33 +116,16 @@ int main()
 
     BigInt *res = BinaryAlgorithmForGCD(a, b);
     BigInt_print(res, 0);
-    
-    //  while (!BigInt_isZero(a)) {
-    //     BigInt_print(a, 0);
-    //     printf("\n");
-    //     BigInt_DivideByTwo(a);
-    // }
-    // BigInt_print(a, 1);
-
-    // int k = 5;
-    // BigInt_multiplicationByTwoPowerK(a, k);
-
-    // BigInt_print(a, 1);
-    // BigInt_print(b, 1);
-    // a =BigInt_Subtraction(a, b);
-    // BigInt_print(a, 1);
 
     BigInt_destruct(a);
     BigInt_destruct(b);
     BigInt_destruct(res);
-    
+
     return 0;
 }
 
 BigInt* BinaryAlgorithmForGCD(BigInt *a, BigInt *b)
 {
-    if (BigInt_isOne(a) || BigInt_isOne(b)) return BigInt_initialize("1");
-
     int k = 0;
     BigInt *n = BigInt_min(a, b);
     BigInt *m = BigInt_max(a, b);
@@ -148,41 +135,29 @@ BigInt* BinaryAlgorithmForGCD(BigInt *a, BigInt *b)
         if (BigInt_isEven(n) && BigInt_isEven(m))
         {
             k++;
-            BigInt_DivideByTwo(n);
-            BigInt_DivideByTwo(m);
-            // printf("Both divided by two\n");
-            // BigInt_print(m, 0);
-            // printf("\n");
-            // BigInt_print(n, 0);
-            // printf("\n---\n");
+            BigInt_DivideByTwoVer2(n);
+            BigInt_DivideByTwoVer2(m);
         }
         else if (BigInt_isEven(n))
         {
-            BigInt_DivideByTwo(n);
-            // printf("n divided by two\n");
-            // BigInt_print(n, 0);
-            // printf("\n---\n");
+            BigInt_DivideByTwoVer2(n);
         }
         else if (BigInt_isEven(m))
         {
-            BigInt_DivideByTwo(m);
-            // printf("m divided by two\n");
-            // BigInt_print(m, 0);
-            // printf("\n---\n");
+            BigInt_DivideByTwoVer2(m);
         }
 
         if (BigInt_Comparator(n, m) == 1) // if n is greater than m
             BigInt_swap(n, m);
-        m = BigInt_Subtraction(m, n);
-        // BigInt_print(m, 0);
-        // printf("\n");
-        // BigInt_print(n, 0);
-        // printf("\n===\n");
+        
+        // m = m - n
+        BigInt_SubtractionVer2(m, n);
     }
 
+    BigInt *ans = BigInt_multiplicationByTwoPowerK(n, k);
     BigInt_destruct(m);
-
-    return BigInt_multiplicationByTwoPowerK(n, k);
+    BigInt_destruct(n);
+    return ans;
 }
 
 BigInt* BigInt_initialize(char *a_tmp)
@@ -201,7 +176,6 @@ BigInt* BigInt_initialize(char *a_tmp)
         {
             a->ptr[i] = a_tmp[a->digits - 1 - i] - '0';
         }
-        a->ptr[a->digits] = '\0';
     }
     return a;
 }
@@ -272,20 +246,14 @@ int BigInt_Comparator(BigInt *a, BigInt *b)
 
 void BigInt_DivideByTwo(BigInt *input)
 {
-    if (input->ptr == NULL) 
+    if (input == NULL || input->digits < 1) 
     {
         printf("WRONG ANSWER\n");
-        return;
+        exit(0);
     }
-    // else if (BigInt_isOne(input)) 
-    // {
-    //     BigInt_destruct(input);
-    //     input = BigInt_initialize("0");
-    //     return;
-    // }
 
     const int TWO = 2;
-    float *complement = calloc(input->digit_limit, sizeof(float));
+    int *complement = (int *) calloc(input->digit_limit, sizeof(int));
     for (int i = input->digits - 1; i >= 0 ; i--)
     {
         complement[i] = input->ptr[i] % TWO * 10 / TWO;
@@ -309,38 +277,36 @@ void BigInt_DivideByTwo(BigInt *input)
         }
     }
 
-    // // check whether, and how many digits of the head of the number is 0
-    // // and eliminate them all by updating digits
-    // while (input->ptr[input->digits - 1] == 0)
-    // {
-    //     input->digits--;
-    //     if (input->digits == 0)
-    //     {
-    //         input->digits = 1;
-    //         break;
-    //     }
-    // }
-
     free(complement);
     complement = NULL;
 }
 
 void BigInt_MultipleByTwo(BigInt *input)
 {
+    if (input == NULL || input->digits < 1) 
+    {
+        printf("WRONG ANSWER\n");
+        exit(0);
+        return;
+    }
+
     const int TWO = 2;
-    float *complement = calloc(input->digit_limit, sizeof(float));
-    for (int i = 0; i < input->digits; i++)
+    int *complement = (int*) calloc(input->digit_limit, sizeof(int));
+    for (int i = 0; i < input->digits && i < input->digit_limit; i++)
     {
         input->ptr[i] *= TWO;
+        complement[i] = 0;
         complement[i] = (int) input->ptr[i] / 10;
         input->ptr[i] %= 10;
     }
 
     for (int i = 0; i < input->digits && i < input->digit_limit; i++)
     {
+        // note that adding complement will not exceed 9 
         input->ptr[i+1] += complement[i];
     }
 
+    // printf("complement[input->digits-1] is : %d\n", complement[input->digits-1]);
     if (complement[input->digits-1] != 0)
         input->digits++;
 
@@ -348,15 +314,21 @@ void BigInt_MultipleByTwo(BigInt *input)
     complement = NULL;
 }
 
-BigInt* BigInt_Subtraction(BigInt *a, BigInt *b)
+BigInt* BigInt_SubtractionBuggy(BigInt *a, BigInt *b)
 {
+    if (a == NULL || a->digits < 1 || b == NULL || b->digits < 1) 
+    {
+        printf("WRONG ANSWER\n");
+        return NULL;
+    }
+
     char res_string[DIGIT_LIMIT] = {0};
     if (BigInt_Comparator(a, b) == -1) // if b is greater than a
         BigInt_swap(a, b);
 
     BigInt *big = BigInt_copy(a);
     BigInt *small = BigInt_copy(b);
-    for (int i = 0 ; i < small->digits ; i++)
+    for (int i = 0 ; i < small->digits && i < small->digit_limit ; i++)
     {
         int diff = big->ptr[i] - small->ptr[i]; 
         if (diff < 0 && i < big->digits - 1)
@@ -367,7 +339,7 @@ BigInt* BigInt_Subtraction(BigInt *a, BigInt *b)
         res_string[i] = diff + '0';
     }
 
-    for (int i = small->digits ; i < big->digits ; i++)
+    for (int i = small->digits ; i < big->digits && i < big->digit_limit ; i++)
     {
         int num = big->ptr[i];
         if (num < 0 && i < big->digits - 1)
@@ -428,8 +400,9 @@ char* BigInt_getArray(BigInt *entry)
 {
     if (entry->ptr == NULL) return NULL;
     char* res = calloc(DIGIT_LIMIT, sizeof(char));
-    for (int i = 0 ; i < entry->digits; i++)
+    for (int i = 0 ; i < entry->digits && i < entry->digit_limit; i++)
         res[i] = entry->ptr[i] + '0';
+    res[strlen(res)] = '\0';
     return res;
 }
 
@@ -437,15 +410,20 @@ char* BigInt_getValue(BigInt *entry)
 {
     if (entry->ptr == NULL) return NULL;
     char* res = calloc(DIGIT_LIMIT, sizeof(char));
-    for (int i = 0 ; i < entry->digits; i++)
+    for (int i = 0 ; i < entry->digits && i < entry->digit_limit; i++)
         res[i] = entry->ptr[entry->digits - 1 - i] + '0';
+    res[strlen(res)] = '\0';
     return res;
     // return string_reverse(BigInt_getArray(entry));
 }
 
 int BigInt_isZero(BigInt *entry)
 {
-    if (entry == NULL) return -1;
+    if (entry == NULL) 
+    {
+        printf("WRONG ANSWER\n");
+        return -1;
+    }
     return ((entry->digits == 1) && (entry->ptr[entry->digits-1] == 0));
 }
 
@@ -457,26 +435,94 @@ int BigInt_isOne(BigInt *entry)
 
 BigInt* BigInt_multiplicationByTwoPowerK(BigInt *n, int k)
 {
+    BigInt *ans = BigInt_copy(n);
     if (k < 0)
     {
-        while (k < 0)
+        while (k < 0 && !BigInt_isZero(ans))
         {
-            BigInt_DivideByTwo(n);
+            BigInt_DivideByTwoVer2(ans);
             k++;
         }
     }
     else if (k > 0)
     {
-        while (k >0)
+        while (k >0 && !BigInt_isZero(ans))
         {
-            BigInt_MultipleByTwo(n);
+            BigInt_MultipleByTwoVer2(ans);
             k--;
         }
     }
-    return n;   // note that k will equal to 0 at this point
+    return ans;   // note that k will equal to 0 at this point
 }
 
 int BigInt_isEven(BigInt *input)
 {
+    if (input == NULL) 
+    {
+        printf("WRONG ANSWER\n");
+        return -1;
+    }
     return (input->ptr[0] % 2 == 0);
+}
+
+void BigInt_MultipleByTwoVer2(BigInt *arr)
+{
+    int inc_digit = arr->ptr[arr->digits-1] * 2 > 9 ? 1 : 0;
+    for (int i = arr->digits - 1 ; i >= 0 && i < arr->digit_limit; i--)
+    {
+        if (arr->ptr[i] * 2 > 9)
+            arr->ptr[i+1]++;
+        arr->ptr[i] = (arr->ptr[i] * 2) % 10;
+    }
+    if (inc_digit && arr->digits < arr->digit_limit)
+        arr->digits++;
+}
+
+void BigInt_DivideByTwoVer2(BigInt *entry)
+{
+    const int FIVE = 5;
+    int dec_digit = entry->ptr[entry->digits-1] == 1;
+    for (int i = 0 ; i < entry->digits && i < entry->digit_limit ; i++)
+    {
+        // if digit is an odd and it's not the unit digit (to avoid touching undeclared memory), 
+        // increment the previous digit by 5
+        if (entry->ptr[i] % 2 != 0 && i != 0)
+            entry->ptr[i-1] += FIVE;
+        entry->ptr[i] /= 2;
+    }
+    if (dec_digit && entry->digits > 1)
+        entry->digits--;
+}
+
+void BigInt_SubtractionVer2(BigInt *a, BigInt *b)
+{
+    const int TEN = 10;
+    if (a == NULL || b == NULL){
+        printf("WRONG ANSWER\n");
+        exit(0);
+    }
+
+    if (BigInt_Comparator(a, b) != 1)
+        BigInt_swap(a, b);
+    
+    for (int i = 0 ; (i < a->digits || i < b->digits) && i < DIGIT_LIMIT ; i++)
+    {
+        int diff = i < b->digits ? a->ptr[i] - b->ptr[i] : a->ptr[i];
+        a->ptr[i] = diff;
+
+        int j = i, next_j = j+1; 
+        int borrow = (next_j < a->digits && a->ptr[j] < 0)? 1 : 0;
+        while (borrow)
+        {
+            a->ptr[j] += TEN;
+            a->ptr[next_j]--;
+
+            j++;
+            next_j = j+1;
+            borrow = (next_j < a->digits && a->ptr[j] < 0)? 1 : 0;
+        }        
+    }
+
+    while (a->ptr[a->digits-1] == 0 && a->digits > 1)
+        a->digits--;
 }
