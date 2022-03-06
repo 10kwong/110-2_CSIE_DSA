@@ -44,8 +44,8 @@ void BigInt_print(BigInt *, int mode);
 void BigInt_replace(BigInt *to, BigInt *from);
 
 // make a copy of a BigInt
-// Input: a BigInt pointer 
-// Output: a BigInt pointer that stored same value as the input
+// Input: BigInt pointer 
+// Output: BigInt pointer that stored same value as the input
 BigInt* BigInt_copy(BigInt *obj);
 
 // compare two BigInt 
@@ -112,11 +112,26 @@ int main()
 
     BigInt *res = BinaryAlgorithmForGCD(a, b);
     BigInt_print(res, 0);
+    
+    //  while (!BigInt_isZero(a)) {
+    //     BigInt_print(a, 0);
+    //     printf("\n");
+    //     BigInt_DivideByTwo(a);
+    // }
+    // BigInt_print(a, 1);
 
+    // int k = 5;
+    // BigInt_multiplicationByTwoPowerK(a, k);
+
+    // BigInt_print(a, 1);
+    // BigInt_print(b, 1);
+    // a =BigInt_Subtraction(a, b);
+    // BigInt_print(a, 1);
 
     BigInt_destruct(a);
     BigInt_destruct(b);
     BigInt_destruct(res);
+    
     return 0;
 }
 
@@ -135,19 +150,34 @@ BigInt* BinaryAlgorithmForGCD(BigInt *a, BigInt *b)
             k++;
             BigInt_DivideByTwo(n);
             BigInt_DivideByTwo(m);
+            // printf("Both divided by two\n");
+            // BigInt_print(m, 0);
+            // printf("\n");
+            // BigInt_print(n, 0);
+            // printf("\n---\n");
         }
         else if (BigInt_isEven(n))
         {
             BigInt_DivideByTwo(n);
+            // printf("n divided by two\n");
+            // BigInt_print(n, 0);
+            // printf("\n---\n");
         }
         else if (BigInt_isEven(m))
         {
             BigInt_DivideByTwo(m);
+            // printf("m divided by two\n");
+            // BigInt_print(m, 0);
+            // printf("\n---\n");
         }
 
         if (BigInt_Comparator(n, m) == 1) // if n is greater than m
             BigInt_swap(n, m);
         m = BigInt_Subtraction(m, n);
+        // BigInt_print(m, 0);
+        // printf("\n");
+        // BigInt_print(n, 0);
+        // printf("\n===\n");
     }
 
     BigInt_destruct(m);
@@ -171,6 +201,7 @@ BigInt* BigInt_initialize(char *a_tmp)
         {
             a->ptr[i] = a_tmp[a->digits - 1 - i] - '0';
         }
+        a->ptr[a->digits] = '\0';
     }
     return a;
 }
@@ -241,12 +272,17 @@ int BigInt_Comparator(BigInt *a, BigInt *b)
 
 void BigInt_DivideByTwo(BigInt *input)
 {
-    if (BigInt_isOne(input)) 
+    if (input->ptr == NULL) 
     {
-        BigInt_destruct(input);
-        input = BigInt_initialize("0");
+        printf("WRONG ANSWER\n");
         return;
     }
+    // else if (BigInt_isOne(input)) 
+    // {
+    //     BigInt_destruct(input);
+    //     input = BigInt_initialize("0");
+    //     return;
+    // }
 
     const int TWO = 2;
     float *complement = calloc(input->digit_limit, sizeof(float));
@@ -255,23 +291,35 @@ void BigInt_DivideByTwo(BigInt *input)
         complement[i] = input->ptr[i] % TWO * 10 / TWO;
         input->ptr[i] /= TWO;
     }
-    // add remainder back after divided by two 
-    for (int i = input->digits - 2; i >= 0 ; i--)
-    {
-        input->ptr[i] += complement[i+1];
-    }
 
-    // check whether, and how many digits of the head of the number is 0
-    // and eliminate them all by updating digits
-    while (input->ptr[input->digits - 1] == 0)
+    // add remainder back after divided by two 
+    // invalid if the number is between 0 to 9
+    if (input->digits > 1)
     {
-        input->digits--;
-        if (input->digits == 0)
+        for (int i = input->digits - 2; i >= 0 ; i--)
         {
-            input->digits = 1;
-            break;
+            input->ptr[i] += complement[i+1];
+        }
+
+        // check whether, and how many digits of the head of the number is 0
+        //  and eliminate them all by updating digits
+        while (input->ptr[input->digits - 1] == 0 && input->digits > 1)
+        {
+            input->digits--;
         }
     }
+
+    // // check whether, and how many digits of the head of the number is 0
+    // // and eliminate them all by updating digits
+    // while (input->ptr[input->digits - 1] == 0)
+    // {
+    //     input->digits--;
+    //     if (input->digits == 0)
+    //     {
+    //         input->digits = 1;
+    //         break;
+    //     }
+    // }
 
     free(complement);
     complement = NULL;
@@ -303,7 +351,8 @@ void BigInt_MultipleByTwo(BigInt *input)
 BigInt* BigInt_Subtraction(BigInt *a, BigInt *b)
 {
     char res_string[DIGIT_LIMIT] = {0};
-    if (BigInt_Comparator(a, b) == 0) return BigInt_initialize("0");
+    if (BigInt_Comparator(a, b) == -1) // if b is greater than a
+        BigInt_swap(a, b);
 
     BigInt *big = BigInt_copy(a);
     BigInt *small = BigInt_copy(b);
@@ -332,14 +381,9 @@ BigInt* BigInt_Subtraction(BigInt *a, BigInt *b)
     BigInt *res = BigInt_initialize(string_reverse(res_string));
     // check whether, and how many digits of the head of the number is 0
     // and eliminate them all by updating digits
-    while (res->ptr[res->digits - 1] == 0)
+    while (res->ptr[res->digits - 1] == 0 && res->digits > 1)
     {
         res->digits--;
-        if (res->digits == 0)
-        {
-            res->digits = 1;
-            break;
-        }
     }
     BigInt_destruct(big);
     BigInt_destruct(small);
@@ -411,13 +455,13 @@ int BigInt_isOne(BigInt *entry)
     return ((entry->digits == 1) && (entry->ptr[entry->digits-1] == 1));
 }
 
-BigInt* BigInt_multiplicationByTwoPowerK(BigInt *m, int k)
+BigInt* BigInt_multiplicationByTwoPowerK(BigInt *n, int k)
 {
     if (k < 0)
     {
         while (k < 0)
         {
-            BigInt_DivideByTwo(m);
+            BigInt_DivideByTwo(n);
             k++;
         }
     }
@@ -425,11 +469,11 @@ BigInt* BigInt_multiplicationByTwoPowerK(BigInt *m, int k)
     {
         while (k >0)
         {
-            BigInt_MultipleByTwo(m);
+            BigInt_MultipleByTwo(n);
             k--;
         }
     }
-    return m;   // note that k will equal to 0 at this point
+    return n;   // note that k will equal to 0 at this point
 }
 
 int BigInt_isEven(BigInt *input)
