@@ -1,0 +1,19 @@
+City 1
+5 4 3 2 
+City 2
+1 
+City 3
+1 
+City 4
+1 
+City 5
+1 
+4
+2
+1
+current city is 5
+  finding city 1
+1
+current city is 3
+  finding city 1
+1
